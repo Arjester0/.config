@@ -1,3 +1,5 @@
+-- Modified Nvim config stolen from Vimothee Chalamet, run using nightly version
+-- of Nvim from Bob
 vim.opt.winborder = "rounded"
 vim.opt.hlsearch = false
 vim.cmd([[set mouse=]])
