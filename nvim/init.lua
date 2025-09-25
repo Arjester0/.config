@@ -14,7 +14,6 @@ vim.opt.undofile = true
 vim.opt.signcolumn = "yes"
 
 vim.pack.add({
-	{ src = "https://github.com/vague2k/vague.nvim" },
 	{ src = "https://github.com/stevearc/oil.nvim" },
 	{ src = "https://github.com/echasnovski/mini.nvim" },
 	{ src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" },
@@ -23,7 +22,7 @@ vim.pack.add({
 	{ src = 'https://github.com/neovim/nvim-lspconfig' },
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/L3MON4D3/LuaSnip" },
-	{ src = "https://github.com/SylvanFranklin/pear" },
+	{ src = "https://github.com/alljokecake/naysayer-theme.nvim" },
 })
 
 require "mason".setup()
@@ -63,8 +62,10 @@ vim.lsp.enable(
 vim.cmd [[set completeopt+=menuone,noselect,popup]]
 
 -- colors
-require "vague".setup({ transparent = true })
-vim.cmd("colorscheme vague")
+-- require "vague".setup({ transparent = true }) NOTE: black and typical nice looking code colors 
+-- require "naysayer".setup({ tansparent = true }) NOTE: Jblow colors 
+-- require "gruvbox".setup({ tansparent = true }) NOTE: you know what fucking gruvbox looks like
+vim.cmd("colorscheme naysayer")
 vim.cmd(":hi statusline guibg=NONE")
 
 -- snippets
@@ -77,18 +78,32 @@ local map = vim.keymap.set
 vim.g.mapleader = " "
 map('n', '<leader>w', '<Cmd>write<CR>')
 map('n', '<leader>q', require("mini.bufremove").delete)
+map('n', '<leader>Q', '<Cmd>:wqa<CR>')
 map('n', '<C-f>', '<Cmd>Open .<CR>')
-map('n', '<leader>v', '<Cmd>e $MYVIMRC<CR>')
-map('n', '<leader>z', '<Cmd>e ~/.config/zsh/.zshrc<CR>')
+
+-- open RC files.
+-- map('n', '<leader>v', '<Cmd>e $MYVIMRC<CR>')
+-- map('n', '<leader>z', '<Cmd>e ~/.config/zsh/.zshrc<CR>')
+
+-- quickly switch files with alternate / switch it
 map('n', '<leader>s', '<Cmd>e #<CR>')
 map('n', '<leader>S', '<Cmd>bot sf #<CR>')
+map({ 'n', 'v', 'x' }, '<leader>m', ':move ')
+
+-- I use norm so much this makes sense
 map({ 'n', 'v' }, '<leader>n', ':norm ')
+
+-- system clipboard
 map({ 'n', 'v' }, '<leader>y', '"+y')
 map({ 'n', 'v' }, '<leader>d', '"+d')
-map({ 'n', 'v' }, '<leader>c', '1z=')
+map({ 'n', 'v' }, '<leader>c', ':')
+
+-- soft reload config file
 map({ 'n', 'v' }, '<leader>o', ':update<CR> :source<CR>')
+
 map('t', '', "")
 map('t', '', "")
+
 map('n', '<leader>lf', vim.lsp.buf.format)
 map("i", "<C-e>", function() ls.expand_or_jump(1) end, { silent = true })
 map({ "i", "s" }, "<C-J>", function() ls.jump(1) end, { silent = true })
@@ -99,7 +114,9 @@ map('n', '<leader>b', function() require("pear").jump_pair() end)
 map('n', '<leader>h', "<Cmd>Pick help<CR>")
 map('n', '<leader>e', "<Cmd>Oil<CR>")
 map('i', '<c-e>', function() vim.lsp.completion.get() end)
--- diagnostic mappings 
-map('n', '<leader>dl', vim.diagnostic.open_float, { desc = "Show diagnostic" })
-map('n', '<leader>dq', vim.diagnostic.setloclist, { desc = "Diagnostics list" })
 
+map("n", "<M-n>", "<cmd>resize +2<CR>")          -- Increase height
+map("n", "<M-e>", "<cmd>resize -2<CR>")          -- Decrease height
+map("n", "<M-i>", "<cmd>vertical resize +5<CR>") -- Increase width
+map("n", "<M-m>", "<cmd>vertical resize -5<CR>") -- Decrease width
+map("i", "<C-s>", "<c-g>u<Esc>[s1z=`]a<c-g>u")
