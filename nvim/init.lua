@@ -1,34 +1,66 @@
 vim.cmd([[set mouse=]])
 vim.cmd([[set noswapfile]])
+
 vim.opt.winborder = "rounded"
 vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.showtabline = 2
+vim.opt.signcolumn = "yes"
 vim.opt.wrap = false
 vim.opt.cursorcolumn = false
 vim.opt.ignorecase = true
-vim.opt.shiftwidth = 2
 vim.opt.smartindent = true
-vim.opt.number = true
-vim.opt.relativenumber = true
 vim.opt.termguicolors = true
 vim.opt.undofile = true
-vim.opt.signcolumn = "yes"
+vim.opt.number = true
+vim.opt.relativenumber = true
 
 vim.pack.add({
+	{ src = "https://github.com/vague2k/vague.nvim" },
+	{ src = "https://github.com/LinArcX/telescope-env.nvim" },
+	{ src = "https://github.com/chentoast/marks.nvim" },
 	{ src = "https://github.com/stevearc/oil.nvim" },
-	{ src = "https://github.com/echasnovski/mini.nvim" },
-	{ src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" },
-	{ src = "nvim-treesitter/nvim-treesitter-textobjects" },
+	{ src = "https://github.com/nvim-tree/nvim-web-devicons" },
+	{ src = "https://github.com/aznhe21/actions-preview.nvim" },
+	{ src = "https://github.com/nvim-treesitter/nvim-treesitter",        version = "main" },
+	{ src = "https://github.com/nvim-telescope/telescope.nvim",          version = "0.1.8" },
+	{ src = "https://github.com/nvim-lua/plenary.nvim" },
 	{ src = "https://github.com/chomosuke/typst-preview.nvim" },
-	{ src = 'https://github.com/neovim/nvim-lspconfig' },
+	{ src = "https://github.com/neovim/nvim-lspconfig" },
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/L3MON4D3/LuaSnip" },
-	{ src = "https://github.com/alljokecake/naysayer-theme.nvim" },
+	{ src = "https://github.com/nvim-telescope/telescope-ui-select.nvim" },
+  { src = "https://github.com/alljokecake/naysayer-theme.nvim" },
 })
 
+require "marks".setup {
+	builtin_marks = { "<", ">", "^" },
+	refresh_interval = 250,
+	sign_priority = { lower = 10, upper = 15, builtin = 8, bookmark = 20 },
+	excluded_filetypes = {},
+	excluded_buftypes = {},
+	mappings = {}
+}
+
+
+local default_color = "naysayer"
+
 require "mason".setup()
-require "mini.pick".setup()
-require "mini.bufremove".setup()
-require "oil".setup()
+require "telescope".setup({
+	defaults = {
+		color_devicons = true,
+		sorting_strategy = "ascending",
+		borderchars = { "", "", "", "", "", "", "", "" },
+		path_displays = "smart",
+		layout_strategy = "horizontal",
+		layout_config = {
+			height = 100,
+			width = 400,
+			prompt_position = "top",
+			preview_cutoff = 40,
+		}
+	}
+})
 
 vim.api.nvim_create_autocmd('LspAttach', {
 	group = vim.api.nvim_create_augroup('my.lsp', {}),
@@ -42,81 +74,130 @@ vim.api.nvim_create_autocmd('LspAttach', {
 		end
 	end,
 })
-
--- lsp
-vim.lsp.enable(
-	{
-		"lua_ls",
-		"svelte",
-		"tinymist",
-		"emmetls",
-		"rust_analyzer",
-		"clangd",
-		"ruff",
-		"glsl_analyzer",
-		"haskell-language-server",
-		"hlint",
-
-	}
-)
 vim.cmd [[set completeopt+=menuone,noselect,popup]]
 
--- colors
--- require "vague".setup({ transparent = true }) NOTE: black and typical nice looking code colors 
--- require "naysayer".setup({ tansparent = true }) NOTE: Jblow colors 
--- require "gruvbox".setup({ tansparent = true }) NOTE: you know what fucking gruvbox looks like
-vim.cmd("colorscheme naysayer")
-vim.cmd(":hi statusline guibg=NONE")
+require("actions-preview").setup {
+	backend = { "telescope" },
+	extensions = { "env" },
+	telescope = vim.tbl_extend(
+		"force",
+		require("telescope.themes").get_dropdown(), {}
+	)
+}
 
--- snippets
+vim.lsp.enable({
+	"lua_ls", "cssls", "svelte", "tinymist",
+	"rust_analyzer", "clangd", "ruff",
+	"glsl_analyzer", "haskell-language-server", "hlint",
+	"intelephense", "biome", "tailwindcss",
+	"ts_ls", "emmet_language_server"
+})
+
+require("oil").setup({
+	lsp_file_methods = {
+		enabled = true,
+		timeout_ms = 1000,
+		autosave_changes = true,
+	},
+	columns = {
+		"permissions",
+		"icon",
+	},
+	float = {
+		max_width = 0.7,
+		max_height = 0.6,
+		border = "rounded",
+	},
+})
+
+require "naysayer".setup({ transparent = true })
 require("luasnip").setup({ enable_autosnippets = true })
 require("luasnip.loaders.from_lua").load({ paths = "~/.config/nvim/snippets/" })
+
+-- ~/.config/nvim/init.lua
+
+local function pack_clean()
+	local active_plugins = {}
+	local unused_plugins = {}
+
+	for _, plugin in ipairs(vim.pack.get()) do
+		active_plugins[plugin.spec.name] = plugin.active
+	end
+
+	for _, plugin in ipairs(vim.pack.get()) do
+		if not active_plugins[plugin.spec.name] then
+			table.insert(unused_plugins, plugin.spec.name)
+		end
+	end
+
+	if #unused_plugins == 0 then
+		print("No unused plugins.")
+		return
+	end
+
+	local choice = vim.fn.confirm("Remove unused plugins?", "&Yes\n&No", 2)
+	if choice == 1 then
+		vim.pack.del(unused_plugins)
+	end
+end
+
+vim.keymap.set("n", "<leader>pc", pack_clean)
+
 local ls = require("luasnip")
-
--- mappings
+local builtin = require("telescope.builtin")
 local map = vim.keymap.set
+local current = 1
+
 vim.g.mapleader = " "
-map('n', '<leader>w', '<Cmd>write<CR>')
-map('n', '<leader>q', require("mini.bufremove").delete)
-map('n', '<leader>Q', '<Cmd>:wqa<CR>')
-map('n', '<C-f>', '<Cmd>Open .<CR>')
-
--- open RC files.
--- map('n', '<leader>v', '<Cmd>e $MYVIMRC<CR>')
--- map('n', '<leader>z', '<Cmd>e ~/.config/zsh/.zshrc<CR>')
-
--- quickly switch files with alternate / switch it
-map('n', '<leader>s', '<Cmd>e #<CR>')
-map('n', '<leader>S', '<Cmd>bot sf #<CR>')
-map({ 'n', 'v', 'x' }, '<leader>m', ':move ')
-
--- I use norm so much this makes sense
-map({ 'n', 'v' }, '<leader>n', ':norm ')
-
--- system clipboard
-map({ 'n', 'v' }, '<leader>y', '"+y')
-map({ 'n', 'v' }, '<leader>d', '"+d')
-map({ 'n', 'v' }, '<leader>c', ':')
-
--- soft reload config file
-map({ 'n', 'v' }, '<leader>o', ':update<CR> :source<CR>')
-
-map('t', '', "")
-map('t', '', "")
-
-map('n', '<leader>lf', vim.lsp.buf.format)
-map("i", "<C-e>", function() ls.expand_or_jump(1) end, { silent = true })
+map({ "i", "s" }, "<C-e>", function() ls.expand_or_jump(1) end, { silent = true })
 map({ "i", "s" }, "<C-J>", function() ls.jump(1) end, { silent = true })
 map({ "i", "s" }, "<C-K>", function() ls.jump(-1) end, { silent = true })
-map('n', '<leader>f', "<Cmd>Pick files<CR>")
-map('n', '<leader>r', "<Cmd>Pick buffers<CR>")
-map('n', '<leader>b', function() require("pear").jump_pair() end)
-map('n', '<leader>h', "<Cmd>Pick help<CR>")
-map('n', '<leader>e', "<Cmd>Oil<CR>")
-map('i', '<c-e>', function() vim.lsp.completion.get() end)
+map({ "n", "t" }, "<Leader>t", "<Cmd>tabnew<CR>")
+map({ "n", "t" }, "<Leader>x", "<Cmd>tabclose<CR>")
+for i = 1, 8 do
+	map({ "n", "t" }, "<Leader>" .. i, "<Cmd>tabnext " .. i .. "<CR>")
+end
+map({ "n", "v", "x" }, "<leader>v", "<Cmd>edit $MYVIMRC<CR>", { desc = "Edit " .. vim.fn.expand("$MYVIMRC") })
+map({ "n", "v", "x" }, "<leader>z", "<Cmd>e ~/.config/zsh/.zshrc<CR>", { desc = "Edit .zshrc" })
+map({ "n", "v", "x" }, "<leader>n", ":norm ", { desc = "ENTER NORM COMMAND." })
+map({ "n", "v", "x" }, "<leader>o", "<Cmd>source $MYVIMRC<CR>", { desc = "Source " .. vim.fn.expand("$MYVIMRC") })
+map({ "n", "v", "x" }, "<leader>O", "<Cmd>restart<CR>", { desc = "Restart vim." })
+map({ "n", "v", "x" }, "<C-s>", [[:s/\V]], { desc = "Enter substitue mode in selection" })
+map({ "n", "v", "x" }, "<leader>lf", vim.lsp.buf.format, { desc = "Format current buffer" })
+map({ "v", "x", "n" }, "<C-y>", '"+y', { desc = "System clipboard yank." })
+map({ "n" }, "<leader>f", builtin.find_files, { desc = "Telescope live grep" })
+map({ "n" }, "<leader>g", builtin.live_grep, { desc = "Telescope live grep" })
+map({ "n" }, "<leader>si", builtin.grep_string, { desc = "Telescope live string" })
+map({ "n" }, "<leader>sr", builtin.oldfiles, { desc = "Telescope buffers" })
+map({ "n" }, "<leader>b", builtin.buffers, { desc = "Telescope buffers" })
+map({ "n" }, "<leader>sh", builtin.help_tags, { desc = "Telescope help tags" })
+map({ "n" }, "<leader>sm", builtin.man_pages, { desc = "Telescope man pages" })
+map({ "n" }, "<leader>sr", builtin.lsp_references, { desc = "Telescope tags" })
+map({ "n" }, "<leader>st", builtin.builtin, { desc = "Telescope tags" })
+map({ "n" }, "<leader>sd", builtin.registers, { desc = "Telescope tags" })
+map({ "n" }, "<leader>sc", builtin.colorscheme, { desc = "Telescope tags" })
+map({ "n" }, "<leader>se", "<cmd>Telescope env<cr>", { desc = "Telescope tags" })
+map({ "n" }, "<leader>sa", require("actions-preview").code_actions)
+map({ "n" }, "<M-n>", "<cmd>resize +2<CR>")
+map({ "n" }, "<M-e>", "<cmd>resize -2<CR>")
+map({ "n" }, "<M-i>", "<cmd>vertical resize +5<CR>")
+map({ "n" }, "<M-m>", "<cmd>vertical resize -5<CR>")
+map({ "n" }, "<leader>e", "<cmd>Oil<CR>")
+map({ "n" }, "<leader>c", "1z=")
+map({ "n" }, "<C-q>", ":copen<CR>", { silent = true })
+map({ "n" }, "<leader>w", "<Cmd>update<CR>", { desc = "Write the current buffer." })
+map({ "n" }, "<leader>q", "<Cmd>:quit<CR>", { desc = "Quit the current buffer." })
+map({ "n" }, "<leader>Q", "<Cmd>:wqa<CR>", { desc = "Quit all buffers and write." })
+map({ "n" }, "<C-f>", "<Cmd>Open .<CR>", { desc = "Open current directory in Finder." })
+-- diagnostic mappings 
+map('n', '<leader>dl', vim.diagnostic.open_float, { desc = "Show diagnostic" }) 
+map('n', '<leader>dq', vim.diagnostic.setloclist, { desc = "Diagnostics list" })
 
-map("n", "<M-n>", "<cmd>resize +2<CR>")          -- Increase height
-map("n", "<M-e>", "<cmd>resize -2<CR>")          -- Decrease height
-map("n", "<M-i>", "<cmd>vertical resize +5<CR>") -- Increase width
-map("n", "<M-m>", "<cmd>vertical resize -5<CR>") -- Decrease width
-map("i", "<C-s>", "<c-g>u<Esc>[s1z=`]a<c-g>u")
+vim.api.nvim_create_autocmd("BufWinEnter", {
+	pattern = "*.jsx,*.tsx",
+	group = vim.api.nvim_create_augroup("TS", { clear = true }),
+	callback = function()
+		vim.cmd([[set filetype=typescriptreact]])
+	end
+})
+vim.cmd('colorscheme ' .. default_color)
